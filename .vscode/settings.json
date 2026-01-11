@@ -1,0 +1,11 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cmake.configureEnvironment": {
+        "LC_ALL": "en_US.UTF-8"
+    },
+    "cmake.outputLogEncoding": "utf-8",
+    "files.encoding": "utf8",
+    "git.ignoredRepositories": [
+        "D:/github/monster_war/build/_deps"
+    ]
+}
