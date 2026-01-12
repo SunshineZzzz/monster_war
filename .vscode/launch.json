@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CMake: 调试当前项目",
+            "type": "cppvsdbg", // 如果是用 MSVC 编译器
+            // "type": "cppdbg", // 如果是用 MinGW (gdb) 编译器
+            "request": "launch",
+            // 关键点：使用变量自动获取 CMake 输出的二进制路径
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "${env:PATH};${command:cmake.getLaunchTargetDirectory}"
+                }
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}

@@ -51,13 +51,20 @@ setup_project_dependencies()
 # 项目源文件
 # ============================================
 
-set(SOURCES
-    src/main.cpp
-)
+# 使用 CONFIGURE_DEPENDS 自动感应文件增删
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.h" "${CMAKE_SOURCE_DIR}/src/*.hpp")
+
+source_group(TREE "${CMAKE_SOURCE_DIR}/src" PREFIX "src" FILES ${SOURCES} ${HEADERS})
+
+if(IMGUI_SOURCES)
+    source_group("3rd/ImGui" FILES ${IMGUI_SOURCES})
+endif()
 
 # Windows平台添加资源文件
-if(WIN32)
-    list(APPEND SOURCES resources.rc)
+if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/resources.rc")
+    list(APPEND SOURCES "${CMAKE_SOURCE_DIR}/resources.rc")
+    source_group("res" FILES "${CMAKE_SOURCE_DIR}/resources.rc")
 endif()
 
 # ============================================
@@ -65,7 +72,7 @@ endif()
 # ============================================
 
 # 创建可执行文件
-add_executable(${TARGET} ${SOURCES} ${IMGUI_SOURCES})
+add_executable(${TARGET} ${SOURCES} ${HEADERS} ${IMGUI_SOURCES})
 
 # 设置包含路径，让包含可以从 src/ 开始
 target_include_directories(${TARGET} PRIVATE src)
