@@ -1,5 +1,7 @@
 #pragma once
 
+#include <entt/signal/fwd.hpp>
+
 // 前置声明核心系统
 namespace engine::input {
     class InputManager;
@@ -30,6 +32,7 @@ namespace engine::core {
 class Context final {
 private:
     // 使用引用，确保每个模块都有效，使用时不需要检查指针是否为空。
+    entt::dispatcher& dispatcher_;                          /// < @brief 事件总线
     engine::input::InputManager& input_manager_;            ///< @brief 输入管理器
     engine::render::Renderer& renderer_;                    ///< @brief 渲染器
     engine::render::Camera& camera_;                        ///< @brief 相机
@@ -40,13 +43,15 @@ private:
 public:
     /**
      * @brief 构造函数。
+     * @param dispatcher 对 entt::dispatcher 实例的引用。
      * @param input_manager 对 InputManager 实例的引用。
      * @param renderer 对 Renderer 实例的引用。
      * @param camera 对 Camera 实例的引用。
      * @param resource_manager 对 ResourceManager 实例的引用。
      * @param physics_engine 对 PhysicsEngine 实例的引用。
      */
-    Context(engine::input::InputManager& input_manager,
+    Context(entt::dispatcher& dispatcher,
+            engine::input::InputManager& input_manager,
             engine::render::Renderer& renderer,
             engine::render::Camera& camera,
             engine::render::TextRenderer& text_renderer,
@@ -61,6 +66,7 @@ public:
     Context& operator=(Context&&) = delete;
 
     // --- Getters ---
+    entt::dispatcher& getDispatcher() const { return dispatcher_; }                             ///< @brief 获取事件总线
     engine::input::InputManager& getInputManager() const { return input_manager_; }             ///< @brief 获取输入管理器
     engine::render::Renderer& getRenderer() const { return renderer_; }                         ///< @brief 获取渲染器
     engine::render::Camera& getCamera() const { return camera_; }                               ///< @brief 获取相机

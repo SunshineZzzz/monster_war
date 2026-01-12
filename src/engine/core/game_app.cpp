@@ -10,8 +10,11 @@
 #include "../render/text_renderer.h"
 #include "../input/input_manager.h"
 #include "../scene/scene_manager.h"
+#include "../utils/events.h"
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
+#include <entt/signal/dispatcher.hpp>
+
 
 namespace engine::core {
 
@@ -57,6 +60,7 @@ bool GameApp::init() {
         spdlog::error("no scene setup function registered, can not initialize GameApp.");
         return false;
     }
+    if (!initDispatcher()) return false;
     if (!initConfig()) return false;
     if (!initSDL())  return false;
     if (!initTime()) return false;
@@ -73,6 +77,9 @@ bool GameApp::init() {
 
     // 调用场景设置函数 (创建第一个场景并压入栈)
     scene_setup_func_(*scene_manager_);
+
+    // 注册退出事件 (回调函数可以无参数，代表不使用事件结构体中的数据)
+    dispatcher_->sink<utils::QuitEvent>().connect<&GameApp::onQuitEvent>(this);
 
     is_running_ = true;
     spdlog::trace("GameApp initialized successfully.");
@@ -92,6 +99,9 @@ void GameApp::handleEvents() {
 void GameApp::update(float delta_time) {
     // 游戏逻辑更新
     scene_manager_->update(delta_time);
+
+    // 分发事件
+    dispatcher_->update();
 }
 
 void GameApp::render() {
@@ -107,6 +117,10 @@ void GameApp::render() {
 
 void GameApp::close() {
     spdlog::trace("closing GameApp ...");
+
+    // 断开事件处理函数
+    dispatcher_->sink<utils::QuitEvent>().disconnect<&GameApp::onQuitEvent>(this);
+
     // 先关闭场景管理器，确保所有场景都被清理
     scene_manager_->close();
 
@@ -123,6 +137,18 @@ void GameApp::close() {
     }
     SDL_Quit();
     is_running_ = false;
+}
+
+bool GameApp::initDispatcher()
+{
+    try {
+        dispatcher_ = std::make_unique<entt::dispatcher>();
+    } catch (const std::exception& e) {
+        spdlog::error("initialize event dispatcher failed: {}", e.what());
+        return false;
+    }
+    spdlog::trace("event dispatcher initialized successfully.");
+    return true;
 }
 
 bool GameApp::initConfig()
@@ -270,7 +296,8 @@ bool GameApp::initGameState()
 bool GameApp::initContext()
 {
     try {
-        context_ = std::make_unique<engine::core::Context>(*input_manager_,
+        context_ = std::make_unique<engine::core::Context>(*dispatcher_,
+                                                           *input_manager_,
                                                            *renderer_, 
                                                            *camera_, 
                                                            *text_renderer_,
@@ -295,6 +322,12 @@ bool GameApp::initSceneManager()
     }
     spdlog::trace("scene manager initialized successfully.");
     return true;
+}
+
+void GameApp::onQuitEvent()
+{
+    spdlog::trace("GameApp received quit event from event dispatcher.");
+    is_running_ = false;
 }
 
 } // namespace engine::core
