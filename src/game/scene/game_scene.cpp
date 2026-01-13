@@ -42,24 +42,28 @@ void GameScene::clean() {
     Scene::clean();
 }
 
-void GameScene::onReplace() {
+bool GameScene::onReplace() {
     spdlog::info("onReplace, switch to new game scene");
     requestReplaceScene(std::make_unique<game::scene::GameScene>(context_));
+    return true;
 }
 
-void GameScene::onPush() {
+bool GameScene::onPush() {
     spdlog::info("onPush, push new game scene");
     requestPushScene(std::make_unique<game::scene::GameScene>(context_));
+    return true;
 }
 
-void GameScene::onPop() {
+bool GameScene::onPop() {
     spdlog::info("onPop, pop scene number: {}", scene_num_);
     requestPopScene();
+    return true;
 }
 
-void GameScene::onQuit() {
+bool GameScene::onQuit() {
     spdlog::info("onQuit, exit game");
     quit();
+    return true;
 }
 
 } // namespace game::scene

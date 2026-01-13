@@ -15,10 +15,10 @@ public:
 private:
     // --- 测试输入回调事件 (场景切换测试) ---
     int scene_num_{0};
-    void onReplace();
-    void onPush();
-    void onPop();
-    void onQuit();
+    bool onReplace();
+    bool onPush();
+    bool onPop();
+    bool onQuit();
 };
 
 } // namespace game::scene
