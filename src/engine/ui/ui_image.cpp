@@ -4,24 +4,53 @@
 #include "../core/context.h"
 #include <spdlog/spdlog.h>
 
+#include <entt/core/hashed_string.hpp>
+
 namespace engine::ui {
 
-UIImage::UIImage(std::string_view texture_id,
+UIImage::UIImage(std::string_view texture_path,
                  glm::vec2 position,
                  glm::vec2 size,
-                 std::optional<SDL_FRect> source_rect,
+                 std::optional<engine::utils::Rect> source_rect,
                  bool is_flipped)
     : UIElement(std::move(position), std::move(size)),
-      sprite_(texture_id, std::move(source_rect), is_flipped)
+      sprite_(texture_path, std::move(source_rect), is_flipped)
 {
-    if (texture_id.empty()) {
-        spdlog::warn("created UIImage with empty texture_id.");
+    if (sprite_.getTextureId() == entt::null) {
+        spdlog::warn("create UIImage with empty texture id.");
     }
     spdlog::trace("UIImage constructed successfully.");
 }
 
+UIImage::UIImage(entt::id_type texture_id,
+                 glm::vec2 position,
+                 glm::vec2 size,
+                 std::optional<engine::utils::Rect> source_rect,
+                 bool is_flipped)
+    : UIElement(std::move(position), std::move(size)),
+      sprite_(texture_id, std::move(source_rect), is_flipped)
+{
+    if (sprite_.getTextureId() == entt::null) {
+        spdlog::warn("create UIImage with empty texture id.");
+    }
+    spdlog::trace("UIImage constructed successfully.");
+}
+
+UIImage::UIImage(engine::render::Sprite& sprite,
+                 glm::vec2 position,
+                 glm::vec2 size)
+    : UIElement(std::move(position), std::move(size)),
+      sprite_(sprite)
+{
+    if (sprite_.getTextureId() == entt::null) {
+        spdlog::warn("create UIImage with empty texture id.");
+    }
+    spdlog::trace("UIImage constructed successfully.");
+}
+
+
 void UIImage::render(engine::core::Context& context) {
-    if (!visible_ || sprite_.getTextureId().empty()) {
+    if (!visible_ || sprite_.getTextureId() == entt::null) {
         return; // 如果不可见或没有分配纹理则不渲染
     }
 

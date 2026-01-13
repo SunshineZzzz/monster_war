@@ -170,7 +170,7 @@ void Renderer::drawUIFilledRect(const engine::utils::Rect &rect, const engine::u
     if (!SDL_RenderFillRect(renderer_, &sdl_rect)) {
         spdlog::error("draw filled rect failed: {}", SDL_GetError());
     }
-    setDrawColor(0, 0, 0, 1.0f);
+    setDrawColorFloat(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void Renderer::present()
@@ -187,16 +187,21 @@ std::optional<SDL_FRect> Renderer::getSpriteSrcRect(const Sprite &sprite)
     }
 
     auto src_rect = sprite.getSourceRect();
-    if (src_rect.has_value()) {     // 如果Sprite中存在指定rect，则判断尺寸是否有效
-        if (src_rect.value().w <= 0 || src_rect.value().h <= 0) {
+    if (src_rect.has_value()) {     // 如果Image中存在指定rect，则判断尺寸是否有效
+        if (src_rect.value().size.x <= 0 || src_rect.value().size.y <= 0) {
             spdlog::error("invalid source rect size, ID: {}", sprite.getTextureId());
             return std::nullopt;
         }
-        return src_rect;
+        return SDL_FRect{
+            src_rect.value().position.x, 
+            src_rect.value().position.y, 
+            src_rect.value().size.x, 
+            src_rect.value().size.y
+        };
     } else {                        // 否则获取纹理尺寸并返回整个纹理大小
         SDL_FRect result = {0, 0, 0, 0};
         if (!SDL_GetTextureSize(texture, &result.w, &result.h)) {
-            spdlog::error("cannot get texture size, ID: {}", sprite.getTextureId());
+            spdlog::error("cannot get texture size, ID: {}, path: {}", sprite.getTextureId(), sprite.getTexturePath());
             return std::nullopt;
         }
         return result;

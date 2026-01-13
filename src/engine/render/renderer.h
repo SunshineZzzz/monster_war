@@ -4,6 +4,7 @@
 #include "../utils/math.h"
 #include <string>
 #include <optional> // For std::optional
+#include <SDL3/SDL_stdinc.h>  
 
 struct SDL_Renderer;
 struct SDL_FRect;

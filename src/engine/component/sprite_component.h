@@ -6,7 +6,6 @@
 #include <string>
 #include <string_view>
 #include <optional>
-#include <SDL3/SDL_rect.h>
 #include <glm/vec2.hpp>
 
 namespace engine::core {
@@ -50,7 +49,7 @@ public:
         std::string_view texture_id,
         engine::resource::ResourceManager& resource_manager,
         engine::utils::Alignment alignment = engine::utils::Alignment::NONE,
-        std::optional<SDL_FRect> source_rect_opt = std::nullopt,
+        std::optional<engine::utils::Rect> source_rect_opt = std::nullopt,
         bool is_flipped = false
     );
 
@@ -78,7 +77,7 @@ public:
 
     // Getters
     const engine::render::Sprite& getSprite() const { return sprite_; }         ///< @brief 获取精灵对象
-    std::string_view getTextureId() const { return sprite_.getTextureId(); }  ///< @brief 获取纹理ID
+    entt::id_type getTextureId() const { return sprite_.getTextureId(); }  ///< @brief 获取纹理ID
     bool isFlipped() const { return sprite_.isFlipped(); }                      ///< @brief 获取是否翻转
     bool isHidden() const { return is_hidden_; }                                ///< @brief 获取是否隐藏
     const glm::vec2& getSpriteSize() const { return sprite_size_; }             ///< @brief 获取精灵尺寸
@@ -86,10 +85,10 @@ public:
     engine::utils::Alignment getAlignment() const { return alignment_; }        ///< @brief 获取对齐方式
 
     // Setters
-    void setSpriteById(std::string_view texture_id, std::optional<SDL_FRect> source_rect_opt = std::nullopt); ///< @brief 设置精灵对象
+    void setSpriteById(entt::id_type texture_id, std::optional<engine::utils::Rect> source_rect_opt = std::nullopt); ///< @brief 设置精灵对象
     void setFlipped(bool flipped) { sprite_.setFlipped(flipped); }                                             ///< @brief 设置是否翻转
     void setHidden(bool hidden) { is_hidden_ = hidden; }                                                      ///< @brief 设置是否隐藏
-    void setSourceRect(std::optional<SDL_FRect> source_rect_opt);                                     ///< @brief 设置源矩形
+    void setSourceRect(std::optional<engine::utils::Rect> source_rect_opt);                                     ///< @brief 设置源矩形
     void setAlignment(engine::utils::Alignment anchor);                                                     ///< @brief 设置对齐方式
 
 private:

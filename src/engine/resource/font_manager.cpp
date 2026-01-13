@@ -1,6 +1,7 @@
 #include "font_manager.h"
 #include <spdlog/spdlog.h>
 #include <stdexcept>
+#include <entt/core/hashed_string.hpp>
 
 namespace engine::resource {
 
@@ -20,7 +21,7 @@ FontManager::~FontManager() {
     spdlog::trace("FontManager destructor successfully.");
 }
 
-TTF_Font* FontManager::loadFont(std::string_view file_path, int point_size) {
+TTF_Font* FontManager::loadFont(entt::id_type id, int point_size, std::string_view file_path) {
     // 检查点大小是否有效
     if (point_size <= 0) {
         spdlog::error("invalid point size {} for font '{}'.", point_size, file_path);
@@ -28,7 +29,7 @@ TTF_Font* FontManager::loadFont(std::string_view file_path, int point_size) {
     }
 
     // 创建映射表的键
-    FontKey key = {std::string(file_path), point_size};
+    FontKey key = {id, point_size};
 
     // 首先检查缓存
     auto it = fonts_.find(key);
@@ -46,29 +47,44 @@ TTF_Font* FontManager::loadFont(std::string_view file_path, int point_size) {
 
     // 使用 unique_ptr 存储到缓存中
     fonts_.emplace(key, std::unique_ptr<TTF_Font, SDLFontDeleter>(raw_font));
-    spdlog::debug("font '{}' ({}pt) loaded and cached successfully.", file_path, point_size);
+    spdlog::debug("font '{}' (id = {}, {}pt) loaded and cached successfully.", file_path, id, point_size);
     return raw_font;
 }
 
-TTF_Font* FontManager::getFont(std::string_view file_path, int point_size) {
-    FontKey key = {std::string(file_path), point_size};
+TTF_Font* FontManager::loadFont(entt::hashed_string str_hs, int point_size) {
+    return loadFont(str_hs.value(), point_size, str_hs.data());
+}
+
+TTF_Font* FontManager::getFont(entt::id_type id, int point_size, std::string_view file_path) {
+    FontKey key = {id, point_size};
     auto it = fonts_.find(key);
     if (it != fonts_.end()) {
         return it->second.get();
     }
 
-    spdlog::warn("font '{}' ({}pt) not found in cache, trying to load ...", file_path, point_size);
-    return loadFont(file_path, point_size);
+    // 如果未找到，判断是否提供了file_path
+    if (file_path.empty()) {
+        spdlog::error("font '{}' (id = {}, {}pt) not found in cache, and no file path provided, return nullptr.", file_path, id, point_size);
+        return nullptr;
+    }
+
+
+    spdlog::warn("font '{}' (id = {}, {}pt) not found in cache, trying to load ...", file_path, id, point_size);
+    return loadFont(id, point_size, file_path);
 }
 
-void FontManager::unloadFont(std::string_view file_path, int point_size) {
-    FontKey key = {std::string(file_path), point_size};
+TTF_Font* FontManager::getFont(entt::hashed_string str_hs, int point_size) {
+    return getFont(str_hs.value(), point_size, str_hs.data());
+}
+
+void FontManager::unloadFont(entt::id_type id, int point_size) {
+    FontKey key = {id, point_size};
     auto it = fonts_.find(key);
     if (it != fonts_.end()) {
-        spdlog::debug("unloading font '{}' ({}pt) ...", file_path, point_size);
+        spdlog::debug("unloading font '{}' ({}pt) ...", id, point_size);
         fonts_.erase(it);       // unique_ptr 会处理 TTF_CloseFont
     } else {
-        spdlog::warn("font '{}' ({}pt) not found in cache, nothing to unload.", file_path, point_size);
+        spdlog::warn("font '{}' ({}pt) not found in cache, nothing to unload.", id, point_size);
     }
 }
 
