@@ -9,6 +9,7 @@
 #include <glm/vec2.hpp>
 #include <array>
 #include <entt/signal/sigh.hpp>
+#include <entt/signal/fwd.hpp>
 
 namespace engine::core {
     class Config;
@@ -35,6 +36,8 @@ enum class ActionState {
 class InputManager final {
 private:
     SDL_Renderer* sdl_renderer_;                                            ///< @brief 用于获取逻辑坐标的 SDL_Renderer 指针
+    entt::dispatcher* dispatcher_;                                          ///< @brief 事件分发器
+
     /** @brief 核心数据结构: 存储动作名称函数列表的映射
      * 
      * @note 每个动作有3个状态: PRESSED, HELD, RELEASED，每个状态对应一个回调函数
@@ -46,17 +49,18 @@ private:
     /// < @brief 从输入到关联的动作名称列表
     std::unordered_map<std::variant<SDL_Scancode, Uint32>, std::vector<std::string>> input_to_actions_;
 
-    bool should_quit_ = false;                                      ///< @brief 退出标志
     glm::vec2 mouse_position_;                                      ///< @brief 鼠标位置 (针对屏幕坐标)
+    glm::vec2 logical_mouse_position_;                              ///< @brief 鼠标位置 (针对逻辑坐标)
 
 public:
     /**
      * @brief 构造函数
      * @param sdl_renderer 指向 SDL_Renderer 的指针
      * @param config 配置对象
+     * @param dispatcher 事件分发器
      * @throws std::runtime_error 如果任一指针为 nullptr。
      */
-    InputManager(SDL_Renderer* sdl_renderer, const engine::core::Config* config);
+    InputManager(SDL_Renderer* sdl_renderer, const engine::core::Config* config, entt::dispatcher* dispatcher);
 
     /**
      * @brief 注册一个动作的回调函数
@@ -67,7 +71,7 @@ public:
     entt::sink<entt::sigh<bool()>> onAction(std::string_view action_name, ActionState action_state = ActionState::PRESSED);
 
     void update();                                    ///< @brief 更新输入状态，每轮循环最先调用
-
+    void quit();                                      ///< @brief 退出游戏
 
     // 保留动作状态检查, 提供不同的使用选择
     bool isActionDown(std::string_view action_name) const;        ///< @brief 动作当前是否触发 (持续按下或本帧按下)
