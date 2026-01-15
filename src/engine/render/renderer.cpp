@@ -1,7 +1,7 @@
 #include "renderer.h"
 #include "../resource/resource_manager.h"
 #include "camera.h"
-#include "sprite.h"
+#include "image.h"
 #include <SDL3/SDL.h>
 #include <stdexcept> // For std::runtime_error
 #include <spdlog/spdlog.h>
@@ -24,7 +24,8 @@ Renderer::Renderer(SDL_Renderer* sdl_renderer, engine::resource::ResourceManager
     spdlog::trace("Renderer build successfully.");
 }
 
-void Renderer::drawSprite(const Camera& camera, const Sprite& sprite, const glm::vec2& position, const glm::vec2& scale, double angle) {
+/*
+void Renderer::drawSprite(const Camera& camera, const Image& sprite, const glm::vec2& position, const glm::vec2& scale, double angle) {
     auto texture = resource_manager_->getTexture(sprite.getTextureId());
     if (!texture) {
         spdlog::error("cannot get texture for ID {}.", sprite.getTextureId());
@@ -60,73 +61,19 @@ void Renderer::drawSprite(const Camera& camera, const Sprite& sprite, const glm:
         spdlog::error("draw rotated texture failed for ID {}: {}", sprite.getTextureId(), SDL_GetError());
     }   
 }
+*/
 
-void Renderer::drawParallax(const Camera &camera, const Sprite &sprite, const glm::vec2 &position, const glm::vec2 &scroll_factor, glm::bvec2 repeat, const glm::vec2 &scale) {
-    auto texture = resource_manager_->getTexture(sprite.getTextureId());
+
+void Renderer::drawUIImage(const Image& image, const glm::vec2& position, const std::optional<glm::vec2>& size) {
+    auto texture = resource_manager_->getTexture(image.getTextureId());
     if (!texture) {
-        spdlog::error("cannot get texture for ID {}.", sprite.getTextureId());
+        spdlog::error("cannot get texture for ID {}.", image.getTextureId());
         return;
     }
 
-    // 检查是否有重复绘制
-    if (!repeat.x && !repeat.y) {
-        spdlog::error("drawParallax: repeat.x and repeat.y are both false, no need to draw.");
-        return;
-    }
-
-    auto src_rect = getSpriteSrcRect(sprite);
+    auto src_rect = getImageSrcRect(image);
     if (!src_rect.has_value()) {
-        spdlog::error("cannot get src rect for sprite ID {}.", sprite.getTextureId());
-        return;
-    }
-
-    // 应用相机变换
-    glm::vec2 position_screen = camera.worldToScreenWithParallax(position, scroll_factor);
-
-    // 计算缩放后的纹理尺寸 
-    float scaled_tex_w = src_rect.value().w * scale.x;
-    float scaled_tex_h = src_rect.value().h * scale.y;
-
-    glm::vec2 start, stop;
-    glm::vec2 viewport_size = camera.getViewportSize();
-
-    if (repeat.x) {
-        // 使用 glm::mod 进行浮点数取模
-        start.x = glm::mod(position_screen.x, scaled_tex_w) - scaled_tex_w;
-        stop.x = viewport_size.x;
-    } else {
-        start.x = position_screen.x;
-        stop.x = glm::min(position_screen.x + scaled_tex_w, viewport_size.x); // 结束点是一个纹理宽度之后，但不超过视口宽度
-    }
-    if (repeat.y) {
-        start.y = glm::mod(position_screen.y, scaled_tex_h) - scaled_tex_h;
-        stop.y = viewport_size.y;
-    } else {
-        start.y = position_screen.y;
-        stop.y = glm::min(position_screen.y + scaled_tex_h, viewport_size.y); // 结束点是一个纹理高度之后，但不超过视口高度
-    }
-
-    for (float y = start.y; y < stop.y; y += scaled_tex_h) {
-        for (float x = start.x; x < stop.x; x += scaled_tex_w) {
-            SDL_FRect dest_rect = {x, y, scaled_tex_w, scaled_tex_h};
-            if (!SDL_RenderTexture(renderer_, texture, nullptr, &dest_rect)) {
-                spdlog::error("draw parallax texture failed for ID {}: {}", sprite.getTextureId(), SDL_GetError());
-                return;
-            }
-        }
-    }
-}
-
-void Renderer::drawUISprite(const Sprite& sprite, const glm::vec2& position, const std::optional<glm::vec2>& size) {
-    auto texture = resource_manager_->getTexture(sprite.getTextureId());
-    if (!texture) {
-        spdlog::error("cannot get texture for ID {}.", sprite.getTextureId());
-        return;
-    }
-
-    auto src_rect = getSpriteSrcRect(sprite);
-    if (!src_rect.has_value()) {
-        spdlog::error("cannot get src rect for sprite ID {}.", sprite.getTextureId());
+        spdlog::error("cannot get src rect for image ID {}.", image.getTextureId());
         return;
     }
 
@@ -140,8 +87,8 @@ void Renderer::drawUISprite(const Sprite& sprite, const glm::vec2& position, con
     }
 
     // 执行绘制(未考虑UI旋转)
-    if (!SDL_RenderTextureRotated(renderer_, texture, &src_rect.value(), &dest_rect, 0.0, nullptr, sprite.isFlipped() ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE)) {
-        spdlog::error("draw UI Sprite failed for ID {}: {}", sprite.getTextureId(), SDL_GetError());
+    if (!SDL_RenderTextureRotated(renderer_, texture, &src_rect.value(), &dest_rect, 0.0, nullptr, image.isFlipped() ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE)) {
+        spdlog::error("draw UI Image failed for ID {}: {}", image.getTextureId(), SDL_GetError());
     }
 }
 
@@ -178,18 +125,18 @@ void Renderer::present()
     SDL_RenderPresent(renderer_);
 }
 
-std::optional<SDL_FRect> Renderer::getSpriteSrcRect(const Sprite &sprite)
+std::optional<SDL_FRect> Renderer::getImageSrcRect(const Image& image)
 {
-    SDL_Texture* texture = resource_manager_->getTexture(sprite.getTextureId());
+    SDL_Texture* texture = resource_manager_->getTexture(image.getTextureId());
     if (!texture) {
-        spdlog::error("cannot get texture for ID {}.", sprite.getTextureId());
+        spdlog::error("cannot get texture for ID {}.", image.getTextureId());
         return std::nullopt;
     }
 
-    auto src_rect = sprite.getSourceRect();
+    auto src_rect = image.getSourceRect();
     if (src_rect.has_value()) {     // 如果Image中存在指定rect，则判断尺寸是否有效
         if (src_rect.value().size.x <= 0 || src_rect.value().size.y <= 0) {
-            spdlog::error("invalid source rect size, ID: {}", sprite.getTextureId());
+            spdlog::error("invalid source rect size, ID: {}, path: {}", image.getTextureId(), image.getTexturePath());
             return std::nullopt;
         }
         return SDL_FRect{
@@ -201,7 +148,7 @@ std::optional<SDL_FRect> Renderer::getSpriteSrcRect(const Sprite &sprite)
     } else {                        // 否则获取纹理尺寸并返回整个纹理大小
         SDL_FRect result = {0, 0, 0, 0};
         if (!SDL_GetTextureSize(texture, &result.w, &result.h)) {
-            spdlog::error("cannot get texture size, ID: {}, path: {}", sprite.getTextureId(), sprite.getTexturePath());
+            spdlog::error("cannot get texture size, ID: {}, path: {}", image.getTextureId(), image.getTexturePath());
             return std::nullopt;
         }
         return result;

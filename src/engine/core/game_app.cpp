@@ -286,6 +286,7 @@ bool GameApp::initGameState()
         return false;
     }
     spdlog::trace("game state initialized successfully.");
+    resource_manager_->loadResources("assets/data/resource_mapping.json");  // 载入默认资源映射文件
     return true;
 }
 

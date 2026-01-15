@@ -27,7 +27,7 @@ SpriteComponent::SpriteComponent(
     spdlog::trace("SpriteComponent: constructed with texture ID: {}", sprite_.getTextureId());
 }
 
-SpriteComponent::SpriteComponent(engine::render::Sprite&& sprite, engine::resource::ResourceManager& resource_manager, engine::utils::Alignment alignment)
+SpriteComponent::SpriteComponent(engine::render::Image&& sprite, engine::resource::ResourceManager& resource_manager, engine::utils::Alignment alignment)
     : resource_manager_(&resource_manager), sprite_(std::move(sprite)), alignment_(alignment)
 {
     if (!resource_manager_) {
@@ -97,7 +97,7 @@ void SpriteComponent::render(engine::core::Context& context) {
     float rotation_degrees = transform_->getRotation();
 
     // 执行绘制
-    context.getRenderer().drawSprite(context.getCamera(), sprite_, pos, scale, rotation_degrees);
+    // context.getRenderer().drawUIImage(context.getCamera(), sprite_, pos, scale, rotation_degrees);
 }
 
 void SpriteComponent::setSpriteById(entt::id_type texture_id, std::optional<engine::utils::Rect> source_rect_opt) {

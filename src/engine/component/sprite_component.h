@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../render/sprite.h"
+#include "../render/image.h"
 #include "./component.h"
 #include "../utils/alignment.h"
 #include <string>
@@ -30,7 +30,7 @@ private:
     engine::resource::ResourceManager* resource_manager_ = nullptr;         ///< @brief 保存资源管理器指针，用于获取纹理大小
     TransformComponent* transform_ = nullptr;                               ///< @brief 缓存 TransformComponent 指针（非必须）
 
-    engine::render::Sprite sprite_;                                         ///< @brief 精灵对象
+    engine::render::Image sprite_;                                         ///< @brief 精灵对象
     engine::utils::Alignment alignment_ = engine::utils::Alignment::NONE;   ///< @brief 对齐方式
     glm::vec2 sprite_size_ = {0.0f, 0.0f};                                  ///< @brief 精灵尺寸
     glm::vec2 offset_ = {0.0f, 0.0f};                                       ///< @brief 偏移量
@@ -60,7 +60,7 @@ public:
      * @param alignment 初始对齐方式。
      */
     SpriteComponent(
-        engine::render::Sprite&& sprite,
+        engine::render::Image&& sprite,
         engine::resource::ResourceManager& resource_manager,
         engine::utils::Alignment alignment = engine::utils::Alignment::NONE
     );
@@ -76,7 +76,7 @@ public:
     void updateOffset();           ///< @brief 更新偏移量(根据当前的 alignment_ 和 sprite_size_ 计算 offset_)。
 
     // Getters
-    const engine::render::Sprite& getSprite() const { return sprite_; }         ///< @brief 获取精灵对象
+    const engine::render::Image& getSprite() const { return sprite_; }         ///< @brief 获取精灵对象
     entt::id_type getTextureId() const { return sprite_.getTextureId(); }  ///< @brief 获取纹理ID
     bool isFlipped() const { return sprite_.isFlipped(); }                      ///< @brief 获取是否翻转
     bool isHidden() const { return is_hidden_; }                                ///< @brief 获取是否隐藏

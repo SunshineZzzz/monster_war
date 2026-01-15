@@ -13,7 +13,7 @@ namespace engine::ui::state {
     
 void UIHoverState::enter()
 {
-    owner_->setSprite("hover"_hs);
+    owner_->setImage("hover"_hs);
     spdlog::debug("switch to hover state.");
 }
 
