@@ -1,13 +1,12 @@
 #pragma once
 
 #include "image.h"
+#include "../component/sprite_component.h"
 #include "../utils/math.h"
 #include <optional>
-#include <SDL3/SDL_stdinc.h>
 
 struct SDL_Renderer;
 struct SDL_FRect;
-struct SDL_FColor;
 
 namespace engine::resource {
     class ResourceManager;
@@ -41,13 +40,14 @@ public:
     /**
      * @brief 绘制一个精灵
      * 
+     * @param camera 游戏相机，用于坐标转换。
      * @param sprite 包含纹理ID、源矩形和翻转状态的 Sprite 对象。
      * @param position 世界坐标中的左上角位置。
-     * @param scale 缩放因子。
-     * @param angle 旋转角度（度）。
+     * @param size 精灵的大小。
+     * @param rotation 旋转角度（度）。
      */
-    // void drawSprite(const Camera& camera, const Image& sprite, const glm::vec2& position, 
-    //                 const glm::vec2& scale = {1.0f, 1.0f}, double angle = 0.0f);
+    void drawSprite(const Camera& camera, const component::Sprite& sprite, const glm::vec2& position, 
+                    const glm::vec2& size, const float rotation = 0.0f);
 
     /**
      * @brief 在屏幕坐标中直接渲染一个用于UI的Image对象。

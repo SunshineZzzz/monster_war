@@ -24,45 +24,41 @@ Renderer::Renderer(SDL_Renderer* sdl_renderer, engine::resource::ResourceManager
     spdlog::trace("Renderer build successfully.");
 }
 
-/*
-void Renderer::drawSprite(const Camera& camera, const Image& sprite, const glm::vec2& position, const glm::vec2& scale, double angle) {
-    auto texture = resource_manager_->getTexture(sprite.getTextureId());
+void Renderer::drawSprite(const Camera& camera, const component::Sprite& sprite, const glm::vec2& position, const glm::vec2& size, const float rotation) {
+    auto texture = resource_manager_->getTexture(sprite.texture_id_, sprite.texture_path_);
     if (!texture) {
-        spdlog::error("cannot get texture for ID {}.", sprite.getTextureId());
-        return;
-    }
-
-    auto src_rect = getSpriteSrcRect(sprite);
-    if (!src_rect.has_value()) {
-        spdlog::error("cannot get src rect for sprite ID {}.", sprite.getTextureId());
+        spdlog::error("unable to get texture for ID {}.", sprite.texture_id_);
         return;
     }
 
     // 应用相机变换
-    glm::vec2 position_screen = camera.worldToScreen(position);
+    glm::vec2 screen_position = camera.worldToScreen(position);
 
-    // 计算目标矩形，注意 position 是精灵的左上角坐标
-    float scaled_w = src_rect.value().w * scale.x;
-    float scaled_h = src_rect.value().h * scale.y;
+    // 计算目标矩形
     SDL_FRect dest_rect = {
-        position_screen.x, 
-        position_screen.y, 
-        scaled_w,
-        scaled_h
+        screen_position.x,
+        screen_position.y,
+        size.x,
+        size.y
     };
 
     if (!isRectInViewport(camera, dest_rect)) { // 视口裁剪：如果精灵超出视口，则不绘制
-        // spdlog::info("精灵超出视口范围，ID: {}", sprite.getTextureId());
+        // spdlog::info("sprite {} is out of viewport, ID: {}", sprite.getTextureId(), sprite.getTextureId());
         return;
     }
 
+    SDL_FRect src_rect = {
+        sprite.src_rect_.position.x,
+        sprite.src_rect_.position.y,
+        sprite.src_rect_.size.x,
+        sprite.src_rect_.size.y
+    };
+
     // 执行绘制(默认旋转中心为精灵的中心点)
-    if (!SDL_RenderTextureRotated(renderer_, texture, &src_rect.value(), &dest_rect, angle, NULL, sprite.isFlipped() ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE)) {
-        spdlog::error("draw rotated texture failed for ID {}: {}", sprite.getTextureId(), SDL_GetError());
+    if (!SDL_RenderTextureRotated(renderer_, texture, &src_rect, &dest_rect, rotation, NULL, sprite.is_flipped_ ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE)) {
+        spdlog::error("render rotate texture failed（ID: {}）：{}", sprite.texture_id_, SDL_GetError());
     }   
 }
-*/
-
 
 void Renderer::drawUIImage(const Image& image, const glm::vec2& position, const std::optional<glm::vec2>& size) {
     auto texture = resource_manager_->getTexture(image.getTextureId());
