@@ -13,6 +13,8 @@ namespace engine::resource {
  *
  * 提供音频资源的加载和缓存功能。构造失败时会抛出异常。
  * 仅供 ResourceManager 内部使用。
+ * 
+ * 外观模式，为一组复杂的子系统接口提供一个更高级别的、统一的接口。
  */
 class AudioManager final{
     friend class ResourceManager;

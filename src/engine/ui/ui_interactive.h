@@ -25,7 +25,7 @@ namespace engine::ui {
 class UIInteractive : public UIElement {
 protected:
     engine::core::Context& context_;                        ///< @brief 可交互元素很可能需要其他引擎组件
-    std::unique_ptr<engine::ui::state::UIState> state_;     ///< @brief 当前状态
+    std::unique_ptr<engine::ui::state::UIState> state_;     ///< @brief 当前状态，状态模式
     std::unordered_map<entt::id_type, engine::render::Image> images_; ///< @brief 精灵集合
     std::unordered_map<entt::id_type, entt::id_type> sounds_;   ///< @brief 音效集合，key为音效名称ID，value为音效ID
     entt::id_type current_image_id_;                        ///< @brief 当前显示的精灵ID
