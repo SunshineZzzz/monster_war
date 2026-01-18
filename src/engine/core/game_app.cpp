@@ -62,6 +62,7 @@ bool GameApp::init() {
     if (!initDispatcher()) return false;
     if (!initConfig()) return false;
     if (!initSDL())  return false;
+    if (!initGameState()) return false;
     if (!initTime()) return false;
     if (!initResourceManager()) return false;
     if (!initAudioPlayer()) return false;
@@ -69,7 +70,6 @@ bool GameApp::init() {
     if (!initCamera()) return false;
     if (!initTextRenderer()) return false;
     if (!initInputManager()) return false;
-    if (!initGameState()) return false;
 
     if (!initContext()) return false;
     if (!initSceneManager()) return false;
@@ -166,7 +166,10 @@ bool GameApp::initSDL()
         return false;
     }
 
-    window_ = SDL_CreateWindow(config_->window_title_.c_str(), config_->window_width_, config_->window_height_, SDL_WINDOW_RESIZABLE);
+    // 设置窗口大小 (窗口大小 * 窗口缩放比例)
+    int window_width = static_cast<int>(static_cast<float>(config_->window_width_) * config_->window_scale_);
+    int window_height = static_cast<int>(static_cast<float>(config_->window_height_) * config_->window_scale_);
+    window_ = SDL_CreateWindow(config_->window_title_.c_str(), window_width, window_height, SDL_WINDOW_RESIZABLE);
     if (window_ == nullptr) {
         spdlog::error("SDL window creation failed! SDL error: {}", SDL_GetError());
         return false;
@@ -188,9 +191,23 @@ bool GameApp::initSDL()
     }
     spdlog::trace("VSync set: {}", config_->vsync_enabled_ ? "Enabled" : "Disabled");
 
-    // 设置逻辑分辨率为窗口大小的一半（针对像素游戏）
-    SDL_SetRenderLogicalPresentation(sdl_renderer_, config_->window_width_ / 2, config_->window_height_ / 2, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    // 设置逻辑分辨率 (窗口大小 * 逻辑缩放比例)
+    int logical_width = static_cast<int>(static_cast<float>(config_->window_width_) * config_->window_logical_scale_);
+    int logical_height = static_cast<int>(static_cast<float>(config_->window_height_) * config_->window_logical_scale_);
+    SDL_SetRenderLogicalPresentation(sdl_renderer_, logical_width, logical_height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     spdlog::trace("SDL initialized successfully.");
+    return true;
+}
+
+bool GameApp::initGameState()
+{
+    try {
+        game_state_ = std::make_unique<engine::core::GameState>(window_, sdl_renderer_);
+    } catch (const std::exception& e) {
+        spdlog::error("initialize game state failed: {}", e.what());
+        return false;
+    }
+    spdlog::trace("game state initialized successfully.");
     return true;
 }
 
@@ -214,6 +231,7 @@ bool GameApp::initResourceManager() {
         return false;
     }
     spdlog::trace("resource manager initialized successfully.");
+    resource_manager_->loadResources("assets/data/resource_mapping.json");  // 载入默认资源映射文件
     return true;
 }
 
@@ -244,7 +262,7 @@ bool GameApp::initRenderer() {
 
 bool GameApp::initCamera() {
     try {
-        camera_ = std::make_unique<engine::render::Camera>(glm::vec2(config_->window_width_ / 2, config_->window_height_ / 2));
+        camera_ = std::make_unique<engine::render::Camera>(game_state_->getLogicalSize());
     } catch (const std::exception& e) {
         spdlog::error("initialize camera failed: {}", e.what());
         return false;
@@ -274,19 +292,6 @@ bool GameApp::initInputManager()
         return false;
     }
     spdlog::trace("input manager initialized successfully.");
-    return true;
-}
-
-bool GameApp::initGameState()
-{
-    try {
-        game_state_ = std::make_unique<engine::core::GameState>(window_, sdl_renderer_);
-    } catch (const std::exception& e) {
-        spdlog::error("initialize game state failed: {}", e.what());
-        return false;
-    }
-    spdlog::trace("game state initialized successfully.");
-    resource_manager_->loadResources("assets/data/resource_mapping.json");  // 载入默认资源映射文件
     return true;
 }
 

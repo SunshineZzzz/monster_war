@@ -95,6 +95,7 @@ private:
     [[nodiscard]] bool initDispatcher();
     [[nodiscard]] bool initConfig();
     [[nodiscard]] bool initSDL();
+    [[nodiscard]] bool initGameState();
     [[nodiscard]] bool initTime();
     [[nodiscard]] bool initResourceManager();
     [[nodiscard]] bool initAudioPlayer();
@@ -102,7 +103,6 @@ private:
     [[nodiscard]] bool initTextRenderer();
     [[nodiscard]] bool initCamera();
     [[nodiscard]] bool initInputManager();
-    [[nodiscard]] bool initGameState();
     [[nodiscard]] bool initContext();
     [[nodiscard]] bool initSceneManager();
 

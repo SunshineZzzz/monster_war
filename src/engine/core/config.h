@@ -21,6 +21,8 @@ public:
     std::string window_title_ = "MonsterWar";
     int window_width_ = 1280;
     int window_height_ = 720;
+    float window_scale_ = 1.0f;
+    float window_logical_scale_ = 1.0f;
     bool window_resizable_ = true;
 
     // 图形设置
