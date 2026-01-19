@@ -22,7 +22,7 @@ namespace engine::loader {
  * 
  * 生成器模式，用于解决复杂对象的创建问题
  */
-class  BasicEntityBuilder {
+class BasicEntityBuilder {
 protected:
 
     engine::loader::LevelLoader& level_loader_;
