@@ -39,7 +39,7 @@ enum class ActionState {
 class InputManager final {
 private:
     SDL_Renderer* sdl_renderer_;                                            ///< @brief 用于获取逻辑坐标的 SDL_Renderer 指针
-    entt::dispatcher* dispatcher_;                                          ///< @brief 事件分发器
+    entt::dispatcher* dispatcher_;                                          ///< @brief 事件总线，事件分发器
 
     /** @brief 核心数据结构: 存储动作名称函数列表的映射
      * 

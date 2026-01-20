@@ -66,6 +66,8 @@ struct SpriteComponent {
      */
     SpriteComponent(Sprite sprite, glm::vec2 size = glm::vec2(0.0f, 0.0f), glm::vec2 offset = glm::vec2(0.0f, 0.0f), bool is_visible = true)
         : sprite_(std::move(sprite)), size_(std::move(size)), offset_(std::move(offset)), is_visible_(is_visible) {
+            // glm::equal返回的bvec2
+            // glm::all返回bool值，判断是否所有分量都为true
             // 如果size为0（未提供），则使用精灵的源矩形大小
             if (glm::all(glm::equal(size, glm::vec2(0.0f)))) {
                 size_ = glm::vec2(sprite_.src_rect_.size.x, sprite_.src_rect_.size.y);
