@@ -12,6 +12,8 @@
 #include "../system/timer_system.h"
 #include "../system/orientation_system.h"
 #include "../system/animation_state_system.h"
+#include "../system/animation_event_system.h"
+#include "../system/combat_resolve_system.h"
 #include "../defs/tags.h"
 #include "../../engine/input/input_manager.h"
 #include "../../engine/core/context.h"
@@ -19,6 +21,7 @@
 #include "../../engine/system/movement_system.h"
 #include "../../engine/system/animation_system.h"
 #include "../../engine/system/ysort_system.h"
+#include "../../engine/system/audio_system.h"
 #include "../../engine/loader/level_loader.h"
 #include <entt/core/hashed_string.hpp>
 #include <entt/signal/sigh.hpp>
@@ -36,6 +39,7 @@ GameScene::GameScene(engine::core::Context& context)
     movement_system_ = std::make_unique<engine::system::MovementSystem>();
     animation_system_ = std::make_unique<engine::system::AnimationSystem>(registry_, dispatcher);
     ysort_system_ = std::make_unique<engine::system::YSortSystem>();
+    audio_system_ = std::make_unique<engine::system::AudioSystem>(registry_, context_);
 
     follow_path_system_ = std::make_unique<game::system::FollowPathSystem>();
     remove_dead_system_ = std::make_unique<game::system::RemoveDeadSystem>();
@@ -45,6 +49,8 @@ GameScene::GameScene(engine::core::Context& context)
     timer_system_ = std::make_unique<game::system::TimerSystem>();
     orientation_system_ = std::make_unique<game::system::OrientationSystem>();
     animation_state_system_ = std::make_unique<game::system::AnimationStateSystem>(registry_, dispatcher);
+    animation_event_system_ = std::make_unique<game::system::AnimationEventSystem>(registry_, dispatcher);
+    combat_resolve_system_ = std::make_unique<game::system::CombatResolveSystem>(registry_, dispatcher);
 
     spdlog::info("GameScene build complete");
 }
@@ -75,6 +81,13 @@ void GameScene::init() {
 
 void GameScene::update(float delta_time) {
     auto& dispatcher = context_.getDispatcher();
+
+    // 事件总线处理完一下内容
+    // 引擎层动画系统更新动画，接收切换动画事件;
+    // 引擎层音频系统，接受播放音效事件;
+    // 游戏层动画状态系统，处理动画播放完毕，根据状态发送切换动画事件;
+    // 游戏层动画事件系统，处理动画事件，发送动画事件(攻击事件，治疗事件等);
+    // 游戏层战斗结算系统，处理攻击事件，治疗事件，修改实体状态(血量等)，添加死亡标签等;
 
     // 每一帧最先清理死亡实体(要在dispatcher处理完事件后再清理，因此放在下一帧开头)
     remove_dead_system_->update(registry_);
