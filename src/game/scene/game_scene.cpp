@@ -80,15 +80,30 @@ void GameScene::update(float delta_time) {
     remove_dead_system_->update(registry_);
 
     // 注意系统更新的顺序
+    // 冷却时间到了加上可攻击标签(AttackReadyTag);
     timer_system_->update(registry_, delta_time);
-    set_target_system_->update(registry_);
-    orientation_system_->update(registry_);
-    follow_path_system_->update(registry_, dispatcher, waypoint_nodes_);
+    // 敌人如果被阻挡，添加阻挡组件(BlockedByComponent);
     block_system_->update(registry_, dispatcher);
+    // 有目标敌人或者玩家判断是否有效，无效，删除目标组件(TargetComponent);
+    // 玩家攻击性角色设置目标组件(TargetComponent);
+    // 远程敌人角色设置目标组件(TargetComponent);
+    // 玩家治疗者角色设置目标组件(TargetComponent);
+    set_target_system_->update(registry_);
+    // 排除“被阻挡的敌人”和“动作锁定敌人”，根据下一个目标节点计算速度向量
+    follow_path_system_->update(registry_, dispatcher, waypoint_nodes_);
+    // 解决敌我双方朝向问题
+    orientation_system_->update(registry_);     // 调用顺序要在Block、SetTarget、FollowPath之后
+    // 被阻挡的敌人，攻击冷却完毕，移除可攻击标签(AttackReadyTag)，事件总线加入可攻击事件;
+    // 有目标的远程敌人，未被阻挡，攻击冷却完毕，移除可攻击标签(AttackReadyTag)，速度向量设为0，事件总线加入可攻击事件;
+    // 有目标的玩家，攻击冷却完毕，移除可攻击标签(AttackReadyTag)，事件总线加入可攻击事件;
     attack_starter_system_->update(registry_, dispatcher);
+    // 移动
     movement_system_->update(registry_, delta_time);
+    // 动画，动画完毕事件加入事件总线
     animation_system_->update(delta_time);
+    // 让RenderComponent的深度depth等于TransformComponent的y坐标
     ysort_system_->update(registry_);   // 调用顺序要在MovementSystem之后
+    // UI更新等
     Scene::update(delta_time);
 }
 
