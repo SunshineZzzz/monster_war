@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt/entity/entity.hpp>
+#include <glm/vec2.hpp>
 
 namespace game::defs {
 
@@ -18,6 +19,15 @@ struct HealEvent {
     entt::entity healer_{entt::null};   ///< @brief 治疗者
     entt::entity target_{entt::null};   ///< @brief 目标
     float amount_{};                    ///< @brief 治疗量
+};
+
+/// @brief 发射投射物事件
+struct EmitProjectileEvent {
+    entt::id_type id_{entt::null};          ///< @brief 投射物ID
+    entt::entity target_{entt::null};       ///< @brief 目标实体
+    glm::vec2 start_position_{};            ///< @brief 起始位置
+    glm::vec2 target_position_{};           ///< @brief 目标位置
+    float damage_{};                        ///< @brief 伤害
 };
 
 }   // namespace game::defs

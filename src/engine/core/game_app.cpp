@@ -41,6 +41,9 @@ void GameApp::run() {
         update(delta_time);
         render();
 
+        // 分发事件(分发消息队列中事件)
+        dispatcher_->update();
+        
         // spdlog::info("delta_time: {}", delta_time);
     }
 
@@ -95,9 +98,6 @@ void GameApp::handleEvents() {
 void GameApp::update(float delta_time) {
     // 游戏逻辑更新
     scene_manager_->update(delta_time);
-
-    // 分发事件(分发消息队列中事件)
-    dispatcher_->update();
 }
 
 void GameApp::render() {
