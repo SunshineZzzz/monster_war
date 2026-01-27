@@ -15,9 +15,12 @@
 #include "../system/animation_event_system.h"
 #include "../system/combat_resolve_system.h"
 #include "../system/projectile_system.h"
+#include "../system/effect_system.h"
+#include "../system/health_bar_system.h"
 #include "../defs/tags.h"
 #include "../../engine/input/input_manager.h"
 #include "../../engine/core/context.h"
+#include "../../engine/render/camera.h"
 #include "../../engine/system/render_system.h"
 #include "../../engine/system/movement_system.h"
 #include "../../engine/system/animation_system.h"
@@ -72,11 +75,12 @@ void GameScene::update(float delta_time) {
     // 事件总线处理完一下内容
     // 引擎层动画系统，接收切换动画事件;
     // 引擎层音频系统，接受播放音效事件;
-    // 游戏层动画状态系统，处理动画播放完毕，根据状态发送切换动画事件;
-    // 游戏层动画事件系统，处理动画事件，发送动画事件(攻击事件，治疗事件，发射投射物事件等)，各自音效事件到事件总线;
-    // 游戏层战斗结算系统，处理攻击事件，治疗事件，修改实体状态(血量等)，添加死亡标签等;
+    // 游戏层动画状态系统，处理动画播放完毕，根据状态发送切换动画事件，如果是一次性动画实体，添加死亡标签;
+    // 游戏层动画事件系统，处理动画事件，发送动画事件(攻击事件，治疗事件，发射投射物事件等)，各发送音效事件到事件总线;
+    // 游戏层战斗结算系统，处理攻击事件，治疗事件，修改实体状态(血量等)，添加死亡标签，发送特效事件到事件总线等;
     // 游戏层面投射物系统，处理投射物事件，创建投射物实体
-
+    // 游戏层面特效系统，处理特效事件，创建特效实体
+    
     // 每一帧最先清理死亡实体(要在dispatcher处理完事件后再清理，因此放在下一帧开头)
     remove_dead_system_->update(registry_);
 
@@ -84,7 +88,7 @@ void GameScene::update(float delta_time) {
     // 冷却时间到了加上可攻击标签(AttackReadyTag);
     timer_system_->update(registry_, delta_time);
     // 敌人如果被阻挡，添加阻挡组件(BlockedByComponent);
-    // 事件总线加入敌人攻击动画事件
+    // 事件总线加入敌人攻击动画事件;
     block_system_->update(registry_, dispatcher);
     // 有目标敌人或者玩家判断是否有效，无效，删除目标组件(TargetComponent);
     // 玩家攻击性角色设置目标组件(TargetComponent);
@@ -112,7 +116,12 @@ void GameScene::update(float delta_time) {
 }
 
 void GameScene::render() {
-    render_system_->update(registry_, context_.getRenderer(), context_.getCamera());
+    auto& renderer = context_.getRenderer();
+    auto& camera = context_.getCamera();
+    
+    // 注意渲染顺序，保证正确的遮盖关系
+    render_system_->update(registry_, renderer, camera);
+    health_bar_system_->update(registry_, renderer, camera);
 
     Scene::render();
 }
@@ -197,6 +206,8 @@ bool GameScene::initSystems() {
     animation_event_system_ = std::make_unique<game::system::AnimationEventSystem>(registry_, dispatcher);
     combat_resolve_system_ = std::make_unique<game::system::CombatResolveSystem>(registry_, dispatcher);
     projectile_system_ = std::make_unique<game::system::ProjectileSystem>(registry_, dispatcher, *entity_factory_);
+    effect_system_ = std::make_unique<game::system::EffectSystem>(registry_, dispatcher, *entity_factory_);
+    health_bar_system_ = std::make_unique<game::system::HealthBarSystem>();
     spdlog::info("system init complete");
     return true;
 }

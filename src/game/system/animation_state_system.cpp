@@ -45,6 +45,12 @@ void AnimationStateSystem::onAnimationFinishedEvent(const engine::utils::Animati
         spdlog::info("The player's action animation has ended, return idle animation, ID: {}", entt::to_integral(event.entity_));
         return;
     }
+
+    // 如果是一次性动画实体（例如死亡特效），则标记死亡待移除
+    if (registry_.all_of<game::defs::OneShotRemoveTag>(event.entity_)) {
+        registry_.emplace_or_replace<game::defs::DeadTag>(event.entity_);
+        return;
+    }
 }
 
 } // namespace game::system
