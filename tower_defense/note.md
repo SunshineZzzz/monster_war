@@ -212,6 +212,8 @@ public class Department {
 
 ### 里氏替换原则 
 
+我的理解就是**面向接口编程，而不是面向实现编程。**
+
 官方定义：子类型必须能够替换掉它们的基类型。 通俗理解：在任何使用父类的地方，都应该可以安全地用其子类来替换，而程序的行为不会产生错误或异常。
 
 3. ✅ 项目中的正面例子：Actor 类 Player 和 Enemy 都继承自 Actor。在 HUDStats 中，它的 target_ 指针类型是 Actor*。这意味着，这个UI组件既可以显示 Player 的状态，也可以无缝切换去显示任意一个 Enemy 的状态，因为 Player 和 Enemy 都完全遵循了 Actor 定义的“契约”。
@@ -227,6 +229,8 @@ public class Department {
 2. ❌ 项目中有待改进的例子：Scene 类的 saveData/loadData 接口 我们在 Scene 基类中定义了 saveData 和 loadData 虚函数。但并非所有场景都需要存读档功能，比如 SceneTitle 就不需要。这使得 SceneTitle 继承了它根本用不上的接口，增加了开发者的认知负担。 更好的设计：应该将存读档功能定义在一个更具体的接口或类中（例如 ISaveable），然后让真正需要该功能的场景（如SceneMain）去实现它。
 
 ### 依赖倒置原则 
+
+**我的理解就是架构分层，高层模块不应该依赖于低层模块，两者都应该依赖于抽象。**
 
 官方定义：
 
