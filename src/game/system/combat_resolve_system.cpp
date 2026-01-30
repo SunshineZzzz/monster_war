@@ -75,7 +75,7 @@ void CombatResolveSystem::onAttackEvent(const game::defs::AttackEvent& event) {
             auto& game_stats = registry_.ctx().get<game::data::GameStats&>();
             game_stats.enemy_killed_count_++;       // 敌人击杀数量+1
             if ((game_stats.enemy_killed_count_ + game_stats.enemy_arrived_count_) >= game_stats.enemy_count_) {
-                spdlog::warn("敌人全部死亡");
+                spdlog::warn("all enemy dead");
                 // TODO: 切换场景逻辑
             }
 
