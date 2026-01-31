@@ -18,6 +18,8 @@
 #include "../system/effect_system.h"
 #include "../system/health_bar_system.h"
 #include "../system/game_rule_system.h"
+#include "../system/place_unit_system.h"
+#include "../system/render_range_system.h"
 #include "../ui/units_portrait_ui.h"
 #include "../defs/tags.h"
 #include "../../engine/input/input_manager.h"
@@ -31,10 +33,6 @@
 #include "../../engine/system/audio_system.h"
 #include "../../engine/loader/level_loader.h"
 #include "../../engine/ui/ui_manager.h"
-#include "../../engine/ui/ui_panel.h"
-#include "../../engine/ui/ui_image.h"
-#include "../../engine/ui/ui_button.h"
-#include "../../engine/ui/ui_label.h"
 #include <entt/core/hashed_string.hpp>
 #include <entt/signal/sigh.hpp>
 #include <spdlog/spdlog.h>
@@ -89,7 +87,6 @@ void GameScene::init() {
         return;
     }
 
-    testSessionData();
     createTestEnemy();
     Scene::init();
 }
@@ -106,6 +103,7 @@ void GameScene::update(float delta_time) {
     // 游戏层面投射物系统，处理投射物事件，创建投射物实体
     // 游戏层面特效系统，处理特效事件，创建特效实体
     // 游戏层游戏规则系统，处理敌人到达基地事件
+    // 游戏层放置单位系统，处理准备放置单位事件，移除(地图上)玩家单位事件，处理鼠标点击尝试将准备放置单位放置到地图上事件，处理鼠标右键尝试将准备放置单位移除事件
 
     // 每一帧最先清理死亡实体(要在dispatcher处理完事件后再清理，因此放在下一帧开头)
     remove_dead_system_->update(registry_);
@@ -137,8 +135,11 @@ void GameScene::update(float delta_time) {
     movement_system_->update(registry_, delta_time);
     // 有动画事件(比如:攻击事件)加入事件总线，有动画完毕事件加入事件总线
     animation_system_->update(delta_time);
+    // 准备放置单位在世界移动颜色变化和鼠标跟随
+    place_unit_system_->update(delta_time);
     // 让RenderComponent的深度depth等于TransformComponent的y坐标
     ysort_system_->update(registry_);   // 调用顺序要在MovementSystem之后
+
     // 场景中头像UI更新
     units_portrait_ui_->update(delta_time);
     // UI更新等
@@ -152,6 +153,7 @@ void GameScene::render() {
     // 注意渲染顺序，保证正确的遮盖关系
     render_system_->update(registry_, renderer, camera);
     health_bar_system_->update(registry_, renderer, camera);
+    render_range_system_->update(registry_, renderer, camera);
 
     Scene::render();
 }
@@ -162,10 +164,7 @@ void GameScene::clean() {
     // 断开所有事件连接
     dispatcher.disconnect(this);
     // 断开输入信号连接
-    input_manager.onAction("mouse_right"_hs).disconnect<&GameScene::onCreateTestPlayerMelee>(this);
-    input_manager.onAction("mouse_left"_hs).disconnect<&GameScene::onCreateTestPlayerRanged>(this);
     input_manager.onAction("pause"_hs).disconnect<&GameScene::onClearAllPlayers>(this);
-    input_manager.onAction("move_left"_hs).disconnect<&GameScene::onCreateTestPlayerHealer>(this);
     Scene::clean();
 }
 
@@ -215,10 +214,7 @@ bool GameScene::initEventConnections() {
 
 bool GameScene::initInputConnections() {
     auto& input_manager = context_.getInputManager();
-    input_manager.onAction("mouse_right"_hs).connect<&GameScene::onCreateTestPlayerMelee>(this);
-    input_manager.onAction("mouse_left"_hs).connect<&GameScene::onCreateTestPlayerRanged>(this);
     input_manager.onAction("pause"_hs).connect<&GameScene::onClearAllPlayers>(this);
-    input_manager.onAction("move_left"_hs).connect<&GameScene::onCreateTestPlayerHealer>(this);
     return true;
 }
 
@@ -281,18 +277,10 @@ bool GameScene::initSystems() {
     effect_system_ = std::make_unique<game::system::EffectSystem>(registry_, dispatcher, *entity_factory_);
     health_bar_system_ = std::make_unique<game::system::HealthBarSystem>();
     game_rule_system_ = std::make_unique<game::system::GameRuleSystem>(registry_, dispatcher);
+    place_unit_system_ = std::make_unique<game::system::PlaceUnitSystem>(registry_, *entity_factory_, context_);
+    render_range_system_ = std::make_unique<game::system::RenderRangeSystem>();
     spdlog::info("system init complete");
     return true;
-}
-
-// --- 测试函数 ---
-void GameScene::testSessionData() {
-    spdlog::info("关卡号: {}", level_number_);
-    spdlog::info("积分: {}", session_data_->getPoint());
-    spdlog::info("是否通关: {}", session_data_->isLevelClear());
-    for (auto& unit : session_data_->getUnitMap()) {
-        spdlog::info("角色名: {}, 职业: {}, 等级: {}, 稀有度: {}", unit.second.name_, unit.second.class_, unit.second.level_, unit.second.rarity_);
-    }
 }
 
 void GameScene::createTestEnemy() {
@@ -307,39 +295,10 @@ void GameScene::createTestEnemy() {
     }
 }
 
-bool GameScene::onCreateTestPlayerMelee() {
-    auto position = context_.getInputManager().getLogicalMousePosition();
-    auto entity = entity_factory_->createPlayerUnit("warrior"_hs, position);
-    // 让玩家处于受伤状态（治疗师不会锁定满血目标）
-    registry_.emplace<game::defs::InjuredTag>(entity);
-    auto& stats = registry_.get<game::component::StatsComponent>(entity);
-    stats.hp_ = stats.max_hp_ / 2;
-    spdlog::info("create warrior: position: {}, {}", position.x, position.y);
-    return true;
-}
-
-bool GameScene::onCreateTestPlayerRanged() {
-    auto position = context_.getInputManager().getLogicalMousePosition();
-    auto entity = entity_factory_->createPlayerUnit("archer"_hs, position);
-    // 让玩家处于受伤状态（治疗师不会锁定满血目标）
-    registry_.emplace<game::defs::InjuredTag>(entity);
-    auto& stats = registry_.get<game::component::StatsComponent>(entity);
-    stats.hp_ = stats.max_hp_ / 2;
-    spdlog::info("create archer: position: {}, {}", position.x, position.y);
-    return true;
-}
-
-bool GameScene::onCreateTestPlayerHealer() {
-    auto position = context_.getInputManager().getLogicalMousePosition();
-    entity_factory_->createPlayerUnit("witch"_hs, position);
-    spdlog::info("create healer: position: {}, {}", position.x, position.y);
-    return true;
-}
-
 bool GameScene::onClearAllPlayers() {
     auto view = registry_.view<game::component::PlayerComponent>();
     for (auto entity : view) {
-        registry_.destroy(entity);
+        context_.getDispatcher().enqueue(game::defs::RemovePlayerUnitEvent{entity});
     }
     return true;
 }
