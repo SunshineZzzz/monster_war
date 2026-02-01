@@ -4,6 +4,7 @@
 #include "../factory/entity_factory.h"
 #include "../factory/blueprint_manager.h"
 #include "../loader/entity_builder_mw.h"
+#include "../spawner/enemy_spawner.h"
 #include "../system/followpath_system.h"
 #include "../system/remove_dead_system.h"
 #include "../system/block_system.h"
@@ -54,6 +55,10 @@ void GameScene::init() {
         spdlog::error("init session_data_ failed");
         return;
     }
+    if (!initLevelConfig()) { 
+        spdlog::error("init level config failed"); 
+        return; 
+    }
     if (!initUIConfig()) {
         spdlog::error("init ui_config_ failed");
         return;
@@ -86,8 +91,11 @@ void GameScene::init() {
         spdlog::error("init systems failed");
         return;
     }
+    if (!initEnemySpawner()) { 
+        spdlog::error("init enemy spawner failed"); 
+        return; 
+    }
 
-    createTestEnemy();
     Scene::init();
 }
 
@@ -140,6 +148,8 @@ void GameScene::update(float delta_time) {
     // 让RenderComponent的深度depth等于TransformComponent的y坐标
     ysort_system_->update(registry_);   // 调用顺序要在MovementSystem之后
 
+    // 场景中其他更新函数
+    enemy_spawner_->update(delta_time);
     // 场景中头像UI更新
     units_portrait_ui_->update(delta_time);
     // UI更新等
@@ -180,6 +190,19 @@ bool GameScene::initSessionData() {
     return true;
 }
 
+bool GameScene::initLevelConfig() {
+    if (!level_config_) {
+        level_config_ = std::make_shared<game::data::LevelConfig>();
+        if (!level_config_->loadFromFile("assets/data/level_config.json")) {
+            spdlog::error("init level_config_ failed");
+            return false;
+        }
+    }
+    waves_ = level_config_->getWavesData(level_number_);
+    game_stats_.enemy_count_ = level_config_->getTotalEnemyCount(level_number_);
+    return true;
+}
+
 bool GameScene::initUIConfig() {
     if (!ui_config_) {
         ui_config_ = std::make_shared<game::data::UIConfig>();
@@ -200,7 +223,9 @@ bool GameScene::loadLevel() {
         waypoint_nodes_, 
         start_points_)
     );
-    if (!level_loader.loadLevel("assets/maps/level1.tmj", this)) {
+    // 获取关卡地图路径
+    auto map_path = level_config_->getMapPath(level_number_);
+    if (!level_loader.loadLevel(map_path, this)) {
         spdlog::error("load level failed");
         return false;
     }
@@ -239,8 +264,13 @@ bool GameScene::initRegistryContext() {
     registry_.ctx().emplace<std::shared_ptr<game::factory::BlueprintManager>>(blueprint_manager_);
     registry_.ctx().emplace<std::shared_ptr<game::data::SessionData>>(session_data_);
     registry_.ctx().emplace<std::shared_ptr<game::data::UIConfig>>(ui_config_);
+    registry_.ctx().emplace<std::shared_ptr<game::data::LevelConfig>>(level_config_);
+    registry_.ctx().emplace<std::unordered_map<int, game::data::WaypointNode>&>(waypoint_nodes_);
+    registry_.ctx().emplace<std::vector<int>&>(start_points_);
     registry_.ctx().emplace<game::data::GameStats&>(game_stats_);
-    spdlog::info("registry_ 上下文初始化完成");
+    registry_.ctx().emplace<game::data::Waves&>(waves_);
+    registry_.ctx().emplace<int&>(level_number_);
+    spdlog::info("registry_ context init complete");
     return true;
 }
 
@@ -248,7 +278,7 @@ bool GameScene::initUnitsPortraitUI() {
     try {
         units_portrait_ui_ = std::make_unique<game::ui::UnitsPortraitUI>(registry_, *ui_manager_, context_);
     } catch (const std::exception& e) {
-        spdlog::error("初始化单位肖像UI失败: {}", e.what());
+        spdlog::error("init units_portrait_ui_ failed: {}", e.what());
         return false;
     }
     return true;
@@ -283,16 +313,10 @@ bool GameScene::initSystems() {
     return true;
 }
 
-void GameScene::createTestEnemy() {
-    // 每个起点创建一批敌人
-    for (auto start_index : start_points_) {
-        auto position = waypoint_nodes_[start_index].position_;
-
-        entity_factory_->createEnemyUnit("wolf"_hs, position, start_index);
-        entity_factory_->createEnemyUnit("slime"_hs, position, start_index);
-        entity_factory_->createEnemyUnit("goblin"_hs, position, start_index);
-        entity_factory_->createEnemyUnit("dark_witch"_hs, position, start_index);
-    }
+bool GameScene::initEnemySpawner() {
+    enemy_spawner_ = std::make_unique<game::spawner::EnemySpawner>(registry_, *entity_factory_);
+    spdlog::info("enemy_spawner_ init complete");
+    return true;
 }
 
 bool GameScene::onClearAllPlayers() {
