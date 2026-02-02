@@ -28,9 +28,10 @@ private:
     // 封装开始、结束帧的方法
     void beginFrame();
     void endFrame();
-
+    
     // 封装每个UI显示模块
-    void renderDemoUI();
+    void renderHoveredUnit();
+    void renderSelectedUnit();
 
 };
 

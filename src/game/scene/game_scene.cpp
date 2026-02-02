@@ -22,6 +22,7 @@
 #include "../system/place_unit_system.h"
 #include "../system/render_range_system.h"
 #include "../system/debug_ui_system.h"
+#include "../system/selection_system.h"
 #include "../ui/units_portrait_ui.h"
 #include "../defs/tags.h"
 #include "../../engine/input/input_manager.h"
@@ -113,6 +114,7 @@ void GameScene::update(float delta_time) {
     // 游戏层面特效系统，处理特效事件，创建特效实体
     // 游戏层游戏规则系统，处理敌人到达基地事件
     // 游戏层放置单位系统，处理准备放置单位事件，移除(地图上)玩家单位事件，处理鼠标点击尝试将准备放置单位放置到地图上事件，处理鼠标右键尝试将准备放置单位移除事件
+    // 游戏层选择系统，处理鼠标左键在玩家单位上的点击事件，从而显示玩家单位的属性；右键取消显示
 
     // 每一帧最先清理死亡实体(要在dispatcher处理完事件后再清理，因此放在下一帧开头)
     remove_dead_system_->update(registry_);
@@ -148,6 +150,8 @@ void GameScene::update(float delta_time) {
     place_unit_system_->update(delta_time);
     // 让RenderComponent的深度depth等于TransformComponent的y坐标
     ysort_system_->update(registry_);   // 调用顺序要在MovementSystem之后
+    // 处理鼠标在玩家单位上或者敌人单位上的悬停事件
+    selection_system_->update();
 
     // 场景中其他更新函数
     enemy_spawner_->update(delta_time);
@@ -272,6 +276,8 @@ bool GameScene::initRegistryContext() {
     registry_.ctx().emplace<game::data::GameStats&>(game_stats_);
     registry_.ctx().emplace<game::data::Waves&>(waves_);
     registry_.ctx().emplace<int&>(level_number_);
+    registry_.ctx().emplace_as<entt::entity&>("selected_unit"_hs, selected_unit_);
+    registry_.ctx().emplace_as<entt::entity&>("hovered_unit"_hs, hovered_unit_);
     spdlog::info("registry_ context init complete");
     return true;
 }
@@ -312,6 +318,7 @@ bool GameScene::initSystems() {
     place_unit_system_ = std::make_unique<game::system::PlaceUnitSystem>(registry_, *entity_factory_, context_);
     render_range_system_ = std::make_unique<game::system::RenderRangeSystem>();
     debug_ui_system_ = std::make_unique<game::system::DebugUISystem>(registry_, context_);
+    selection_system_ = std::make_unique<game::system::SelectionSystem>(registry_, context_);
     spdlog::info("system init complete");
     return true;
 }
