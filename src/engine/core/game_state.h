@@ -48,6 +48,9 @@ public:
     glm::vec2 getLogicalSize() const;
     void setLogicalSize(const glm::vec2& logical_size);
 
+    // 关闭/启用逻辑分辨率的函数，主要用于ImGui使用
+    bool disableLogicalPresentation();      ///< @brief 关闭逻辑分辨率，返回是否成功
+    bool enableLogicalPresentation();       ///< @brief 启用逻辑分辨率，返回是否成功
 
     // --- 便捷查询方法 ---
 

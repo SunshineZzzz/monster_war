@@ -21,6 +21,7 @@
 #include "../system/game_rule_system.h"
 #include "../system/place_unit_system.h"
 #include "../system/render_range_system.h"
+#include "../system/debug_ui_system.h"
 #include "../ui/units_portrait_ui.h"
 #include "../defs/tags.h"
 #include "../../engine/input/input_manager.h"
@@ -166,6 +167,7 @@ void GameScene::render() {
     render_range_system_->update(registry_, renderer, camera);
 
     Scene::render();
+    debug_ui_system_->update();     // 调试UI的显示优先级最高，最后渲染
 }
 
 void GameScene::clean() {
@@ -309,6 +311,7 @@ bool GameScene::initSystems() {
     game_rule_system_ = std::make_unique<game::system::GameRuleSystem>(registry_, dispatcher);
     place_unit_system_ = std::make_unique<game::system::PlaceUnitSystem>(registry_, *entity_factory_, context_);
     render_range_system_ = std::make_unique<game::system::RenderRangeSystem>();
+    debug_ui_system_ = std::make_unique<game::system::DebugUISystem>(registry_, context_);
     spdlog::info("system init complete");
     return true;
 }
