@@ -253,10 +253,10 @@ bool GameScene::initEntityFactory() {
     // 如果蓝图管理器为空，则创建一个（将来可能由构造函数传入）
     if (!blueprint_manager_) {  
         blueprint_manager_ = std::make_shared<game::factory::BlueprintManager>(context_.getResourceManager());
-        if (!blueprint_manager_->loadEnemyClassBlueprints("assets/data/enemy_data.json") || 
+        if (!blueprint_manager_->loadEnemyClassBlueprints("assets/data/enemy_data.json") ||
             !blueprint_manager_->loadPlayerClassBlueprints("assets/data/player_data.json") ||
-            !blueprint_manager_->loadProjectileBlueprints("assets/data/projectile_data.json")) {
-            spdlog::error("load blueprints failed");
+            !blueprint_manager_->loadProjectileBlueprints("assets/data/projectile_data.json") ||
+            !blueprint_manager_->loadEffectBlueprints("assets/data/effect_data.json")) {
             return false;
         }
     }

@@ -75,8 +75,17 @@ public:
      * @return 敌人死亡特效实体
      */
     entt::entity createEnemyDeadEffect(entt::id_type class_id, const glm::vec2& position, const bool is_flipped = false);
-    // TODO: 未来添加其他实体的创建函数
 
+    /**
+     * @brief 创建（通用）特效，数据来自特效蓝图
+     * @param effect_id 特效ID
+     * @param position 位置
+     * @param is_flipped 是否翻转
+     * @return 特效实体
+     */
+    entt::entity createEffect(entt::id_type effect_id, const glm::vec2& position, const bool is_flipped = false);
+    // TODO: 未来添加其他实体的创建函数
+    
 private:
     // --- 组件创建函数 ---
     void addTransformComponent(entt::entity entity, const glm::vec2& position, const glm::vec2& scale = glm::vec2(1.0f), float rotation = 0.0f);
