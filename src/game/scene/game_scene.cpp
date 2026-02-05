@@ -45,8 +45,17 @@ using namespace entt::literals;
 
 namespace game::scene {
 
-GameScene::GameScene(engine::core::Context& context)
-    : Scene("GameScene", context) {
+GameScene::GameScene(engine::core::Context& context,
+    std::shared_ptr<game::factory::BlueprintManager> blueprint_manager,
+    std::shared_ptr<game::data::SessionData> session_data,
+    std::shared_ptr<game::data::UIConfig> ui_config,
+    std::shared_ptr<game::data::LevelConfig> level_config)
+    : engine::scene::Scene("GameScene", context),
+      blueprint_manager_(blueprint_manager),
+      session_data_(session_data),
+      ui_config_(ui_config),
+      level_config_(level_config)
+{
     spdlog::info("GameScene build complete");
 }
 
@@ -99,6 +108,7 @@ void GameScene::init() {
         return; 
     }
 
+    context_.getGameState().setState(engine::core::State::Playing);
     Scene::init();
 }
 
@@ -113,16 +123,28 @@ void GameScene::update(float delta_time) {
     // 游戏层战斗结算系统，处理攻击事件，治疗事件，修改实体状态(血量等)，发送玩家移除单位事件，敌人添加死亡标签，发送特效事件到事件总线等;
     // 游戏层面投射物系统，处理投射物事件，创建投射物实体
     // 游戏层面特效系统，处理特效事件，创建特效实体
-    // 游戏层游戏规则系统，处理敌人到达基地事件
+    // 游戏层游戏规则系统，处理敌人到达基地事件，处理玩家升级事件，加入特效和音频事件，处理玩家撤退事件，移除单位事件;
     // 游戏层放置单位系统，处理准备放置单位事件，移除(地图上)玩家单位事件，处理鼠标点击尝试将准备放置单位放置到地图上事件，
     //      如果拥有被动技能，则添加技能激活事件，处理鼠标右键尝试将准备放置单位移除事件;
     // 处理玩家移除单位事件，标记该单位为死亡，移除占用组件;
     // 游戏层选择系统，处理鼠标左键在玩家单位上的点击事件，从而显示玩家单位的属性；右键取消显示
-    // 游戏层技能系统，处理技能准备就绪事件，创建技能显示实体; 处理技能激活事件，移除技能准备标签，添加技能激活标签，创建技能显示实体，添加BUFF;
-    //      处理技能持续结束事件，移除技能激活标签，移除BUFF; 处理玩家移除单位事件，移除技能显示实体。
+    // 游戏层技能系统，处理技能准备就绪事件，创建技能显示实体，如果是存在改变玩家动画，并且玩家没有锁定状态，则改变玩家动画; 
+    //      处理技能激活事件，移除技能准备标签，添加技能激活标签，创建技能显示实体，添加BUFF;
+    //      处理技能持续结束事件，移除技能激活标签，移除BUFF，如果是存在改变玩家动画，并且玩家没有锁定状态，则改变玩家动画;
+    //      处理玩家移除单位事件，移除技能显示实体。
 
     // 每一帧最先清理死亡实体(要在dispatcher处理完事件后再清理，因此放在下一帧开头)
     remove_dead_system_->update(registry_);
+
+    // 暂停状态下，有些功能依然正常运行
+    if (context_.getGameState().isPaused()) {
+        place_unit_system_->update(delta_time);
+        ysort_system_->update(registry_);
+        selection_system_->update();
+        units_portrait_ui_->update(delta_time);
+        Scene::update(delta_time);
+        return;
+    }
 
     // 注意系统更新的顺序
     // 冷却时间到了加上可攻击标签(AttackReadyTag);
@@ -132,7 +154,6 @@ void GameScene::update(float delta_time) {
     // 更新当前场景的cost
     game_rule_system_->update(delta_time);
     // 敌人如果被阻挡，添加阻挡组件(BlockedByComponent);
-    // 事件总线加入敌人攻击动画事件;
     block_system_->update(registry_, dispatcher);
     // 有目标敌人或者玩家判断是否有效，无效，删除目标组件(TargetComponent);
     // 玩家攻击性角色设置目标组件(TargetComponent);
@@ -183,11 +204,9 @@ void GameScene::render() {
 
 void GameScene::clean() {
     auto& dispatcher = context_.getDispatcher();
-    auto& input_manager = context_.getInputManager();
     // 断开所有事件连接
     dispatcher.disconnect(this);
     // 断开输入信号连接
-    input_manager.onAction("pause"_hs).disconnect<&GameScene::onClearAllPlayers>(this);
     Scene::clean();
 }
 
@@ -246,13 +265,15 @@ bool GameScene::loadLevel() {
 }
 
 bool GameScene::initEventConnections() {
-    // auto& dispatcher = context_.getDispatcher();
+    auto& dispatcher = context_.getDispatcher();
+    dispatcher.sink<game::defs::RestartEvent>().connect<&GameScene::onRestart>(this);
+    dispatcher.sink<game::defs::BackToTitleEvent>().connect<&GameScene::onBackToTitle>(this);
+    dispatcher.sink<game::defs::SaveEvent>().connect<&GameScene::onSave>(this);
     return true;
 }
 
 bool GameScene::initInputConnections() {
-    auto& input_manager = context_.getInputManager();
-    input_manager.onAction("pause"_hs).connect<&GameScene::onClearAllPlayers>(this);
+    // auto& input_manager = context_.getInputManager();
     return true;
 }
 
@@ -338,12 +359,32 @@ bool GameScene::initEnemySpawner() {
     return true;
 }
 
-bool GameScene::onClearAllPlayers() {
-    auto view = registry_.view<game::component::PlayerComponent>();
-    for (auto entity : view) {
-        context_.getDispatcher().enqueue(game::defs::RemovePlayerUnitEvent{entity});
-    }
-    return true;
+// --- 场景相关函数 ---
+void GameScene::onRestart() {
+    spdlog::info("restart level");
+    requestReplaceScene(std::make_unique<game::scene::GameScene>(
+        context_, 
+        blueprint_manager_,
+        session_data_,
+        ui_config_,
+        level_config_
+        )
+    );
+}
+
+void GameScene::onBackToTitle() {
+    spdlog::info("return title");
+    // TODO: 返回标题
+}
+
+void GameScene::onSave() {
+    spdlog::info("save");
+    // TODO: 保存
+}
+
+void GameScene::onLevelClear() {
+    spdlog::info("level clear");
+    // TODO: 关卡通关
 }
 
 } // namespace game::scene

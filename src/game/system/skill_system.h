@@ -17,8 +17,8 @@ namespace game::system {
 class SkillSystem {
     entt::registry& registry_;
     entt::dispatcher& dispatcher_;
+    
     game::factory::EntityFactory& entity_factory_;
-
 public:
     SkillSystem(entt::registry& registry, entt::dispatcher& dispatcher, game::factory::EntityFactory& entity_factory);
     ~SkillSystem();

@@ -57,9 +57,6 @@ void BlockSystem::update(entt::registry& registry, entt::dispatcher& dispatcher)
                 // 给敌人添加被阻挡组件
                 registry.emplace<game::component::BlockedByComponent>(enemy_entity, blocker_entity);
                 spdlog::info("enemy ID: {}, blocked by blocker ID: {}", entt::to_integral(enemy_entity), entt::to_integral(blocker_entity));
-                
-                // 播放动画“attack” （临时测试用，未来会将攻击逻辑放在其他系统里）
-                dispatcher.enqueue(engine::utils::PlayAnimationEvent{enemy_entity, "attack"_hs, true});
             }
         }
     }
