@@ -5,6 +5,7 @@
 #include "../data/ui_config.h"
 #include "../data/game_stats.h"
 #include "../data/level_config.h"
+#include "../defs/events.h"
 #include "../system/fwd.h"
 #include "../../engine/scene/scene.h"
 #include "../../engine/system/fwd.h"
@@ -81,7 +82,7 @@ private:
     entt::entity selected_unit_{entt::null};        // 游戏中鼠标选中的单位
     entt::entity hovered_unit_{entt::null};         // 游戏中鼠标悬浮的单位
     bool show_save_panel_{false};                   // 是否显示保存面板
-    
+
 public:
     /**
      * @brief 构造函数
@@ -122,6 +123,7 @@ private:
     void onBackToTitle();
     void onSave();
     void onLevelClear();
+    void onGameEndEvent(const game::defs::GameEndEvent& event);
 };
 
 } // namespace game::scene

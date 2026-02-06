@@ -15,6 +15,9 @@ class GameRuleSystem {
     entt::registry& registry_;
     entt::dispatcher& dispatcher_;
 
+    bool is_level_clear_{false};        ///< @brief 是否关卡通关
+    float level_clear_timer_{0.0f};     ///< @brief 关卡通关计时器(实现延迟切换场景)
+
 public:
     GameRuleSystem(entt::registry& registry, entt::dispatcher& dispatcher);
     ~GameRuleSystem();
@@ -26,6 +29,8 @@ private:
     void onEnemyArriveHome(const game::defs::EnemyArriveHomeEvent& event);
     void onUpgradeUnitEvent(const game::defs::UpgradeUnitEvent& event);
     void onRetreatEvent(const game::defs::RetreatEvent& event);
+    void onLevelClearDelayedEvent(const game::defs::LevelClearDelayedEvent& event);
+
 };
 
 }

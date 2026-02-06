@@ -1,6 +1,6 @@
 {
-    "level": 2,
-    "level_clear": false,
+    "level": 1,
+    "level_clear": true,
     "point": 0,
     "unit": {
         "伊格纳茨": {
