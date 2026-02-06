@@ -1,6 +1,5 @@
 #include "game_scene.h"
-#include "../component/player_component.h"
-#include "../component/stats_component.h"
+#include "title_scene.h"
 #include "../factory/entity_factory.h"
 #include "../factory/blueprint_manager.h"
 #include "../loader/entity_builder_mw.h"
@@ -25,11 +24,9 @@
 #include "../system/selection_system.h"
 #include "../system/skill_system.h"
 #include "../ui/units_portrait_ui.h"
-#include "../defs/tags.h"
-#include "../../engine/input/input_manager.h"
+#include "../../engine/audio/audio_player.h"
 #include "../../engine/core/context.h"
 #include "../../engine/core/game_state.h"
-#include "../../engine/render/camera.h"
 #include "../../engine/system/render_system.h"
 #include "../../engine/system/movement_system.h"
 #include "../../engine/system/animation_system.h"
@@ -109,6 +106,7 @@ void GameScene::init() {
     }
 
     context_.getGameState().setState(engine::core::State::Playing);
+    context_.getAudioPlayer().playMusic("battle_bgm"_hs);
     Scene::init();
 }
 
@@ -214,7 +212,6 @@ bool GameScene::initSessionData() {
     if (!session_data_) {
         session_data_ = std::make_shared<game::data::SessionData>();
         if (!session_data_->loadDefaultData()) {
-            spdlog::error("init session_data_ failed");
             return false;
         }
     }
@@ -226,7 +223,6 @@ bool GameScene::initLevelConfig() {
     if (!level_config_) {
         level_config_ = std::make_shared<game::data::LevelConfig>();
         if (!level_config_->loadFromFile("assets/data/level_config.json")) {
-            spdlog::error("init level_config_ failed");
             return false;
         }
     }
@@ -239,7 +235,6 @@ bool GameScene::initUIConfig() {
     if (!ui_config_) {
         ui_config_ = std::make_shared<game::data::UIConfig>();
         if (!ui_config_->loadFromFile("assets/data/ui_config.json")) {
-            spdlog::error("load ui_config_ failed");
             return false;
         }
     }
@@ -258,7 +253,6 @@ bool GameScene::loadLevel() {
     // 获取关卡地图路径
     auto map_path = level_config_->getMapPath(level_number_);
     if (!level_loader.loadLevel(map_path, this)) {
-        spdlog::error("load level failed");
         return false;
     }
     return true;
@@ -307,6 +301,7 @@ bool GameScene::initRegistryContext() {
     registry_.ctx().emplace<int&>(level_number_);
     registry_.ctx().emplace_as<entt::entity&>("selected_unit"_hs, selected_unit_);
     registry_.ctx().emplace_as<entt::entity&>("hovered_unit"_hs, hovered_unit_);
+    registry_.ctx().emplace_as<bool&>("show_save_panel"_hs, show_save_panel_);
     spdlog::info("registry_ context init complete");
     return true;
 }
@@ -315,7 +310,6 @@ bool GameScene::initUnitsPortraitUI() {
     try {
         units_portrait_ui_ = std::make_unique<game::ui::UnitsPortraitUI>(registry_, *ui_manager_, context_);
     } catch (const std::exception& e) {
-        spdlog::error("init units_portrait_ui_ failed: {}", e.what());
         return false;
     }
     return true;
@@ -373,13 +367,14 @@ void GameScene::onRestart() {
 }
 
 void GameScene::onBackToTitle() {
-    spdlog::info("return title");
-    // TODO: 返回标题
+    spdlog::info("返回标题");
+    requestReplaceScene(std::make_unique<game::scene::TitleScene>(context_));
 }
 
 void GameScene::onSave() {
-    spdlog::info("save");
-    // TODO: 保存
+    spdlog::info("保存");
+    show_save_panel_ = !show_save_panel_;
+    /* 用ImGui快速实现逻辑，未来再完善游戏内UI */
 }
 
 void GameScene::onLevelClear() {
